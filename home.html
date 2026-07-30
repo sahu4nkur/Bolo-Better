@@ -897,52 +897,316 @@ function startListening(btnId,waveId,fbId){
 }
 
 // ══════════════════════════════════════
-// EVALUATION ENGINE — strict phonetic
+// PHONEME DICTIONARY (CMU Pronouncing Dictionary — open source)
+// Maps English words → ARPAbet phoneme sequences
+// This lets us compare HOW words sound, not how they're spelled.
+// "weather" = W EH DH ER   "wedhar" = W EH D HH AA R  → DH≠D → FAIL
 // ══════════════════════════════════════
+const PHONEMES = {
+  "a":"AH","about":"AH B AW T","absolutely":"AE B S AH L UW T L IY",
+  "accept":"AE K S EH P T","allergic":"AH L ER JH IH K",
+  "ambulance":"AE M B Y AH L AH N S","an":"AH N","and":"AE N D",
+  "afternoon":"AE F T ER N UW N","again":"AH G EH N","agree":"AH G R IY",
+  "all":"AO L","always":"AO L W EY Z","am":"AE M",
+  "analysis":"AH N AE L AH S AH S","any":"EH N IY",
+  "apologize":"AH P AA L AH JH AY Z","appointment":"AH P OY N T M AH N T",
+  "appreciate":"AH P R IY SH IY EY T","are":"AA R","as":"AE Z",
+  "assist":"AH S IH S T","at":"AE T","atm":"EY T IY EH M",
+  "available":"AH V EY L AH B AH L","back":"B AE K","battery":"B AE T ER IY",
+  "be":"B IY","been":"B IH N","believe":"B IH L IY V","better":"B EH T ER",
+  "bill":"B IH L","billing":"B IH L IH NG","bit":"B IH T","book":"B UH K",
+  "books":"B UH K S","breaking":"B R EY K IH NG","busy":"B IH Z IY",
+  "call":"K AO L","can":"K AE N","cards":"K AA R D Z","care":"K EH R",
+  "catch":"K AE CH","check":"CH EH K","children":"CH IH L D R AH N",
+  "clarify":"K L EH R AH F AY","clearly":"K L IH R L IY","close":"K L OW S",
+  "colleagues":"K AA L IY G Z","colour":"K AH L ER","completely":"K AH M P L IY T L IY",
+  "computer":"K AH M P Y UW T ER","confident":"K AA N F AH D AH N T",
+  "confirm":"K AH N F ER M","conversation":"K AA N V ER S EY SH AH N",
+  "cost":"K AO S T","could":"K UH D","counter":"K AW N T ER",
+  "credit":"K R EH D IH T","cricket":"K R IH K AH T","currency":"K ER AH N S IY",
+  "data":"D EY T AH","day":"D EY","deadline":"D EH D L AY N",
+  "degree":"D IH G R IY","delay":"D IH L EY","delicious":"D IH L IH SH AH S",
+  "delivery":"D IH L IH V ER IY","details":"D IH T EY L Z",
+  "different":"D IH F ER AH N T","directions":"D AH R EH K SH AH N Z",
+  "disappointed":"D IH S AH P OY N T AH D","discount":"D IH S K AW N T",
+  "dizzy":"D IH Z IY","do":"D UW","doctor":"D AA K T ER","does":"D AH Z",
+  "down":"D AW N","drinking":"D R IH NG K IH NG","early":"ER L IY",
+  "email":"IY M EY L","enjoy":"EH N JH OY","engineer":"EH N JH AH N IH R",
+  "enough":"IH N AH F","entry":"EH N T R IY","evening":"IY V N IH NG",
+  "everyone":"EH V R IY W AH N","everything":"EH V R IY TH IH NG",
+  "excellent":"EH K S AH L AH N T","exchange":"IH K S CH EY N JH",
+  "excited":"IH K S AY T AH D","excuse":"IH K S K Y UW Z",
+  "experience":"IH K S P IH R IY AH N S","explain":"IH K S P L EY N",
+  "favour":"F EY V ER","feedback":"F IY D B AE K","feel":"F IY L",
+  "fever":"F IY V ER","file":"F AY L","find":"F AY N D","fine":"F AY N",
+  "five":"F AY V","flight":"F L AY T","flies":"F L AY Z","for":"F AO R",
+  "forward":"F AO R W ER D","friday":"F R AY D EY","from":"F R AH M",
+  "fun":"F AH N","get":"G EH T","gift":"G IH F T","give":"G IH V",
+  "going":"G OW IH NG","good":"G UH D","goodbye":"G UH D B AY",
+  "grateful":"G R EY T F AH L","great":"G R EY T","guidance":"G AY D AH N S",
+  "guide":"G AY D","handle":"HH AE N D AH L","happy":"HH AE P IY",
+  "hard":"HH AA R D","have":"HH AE V","headache":"HH EH D EY K",
+  "hear":"HH IH R","help":"HH EH L P","here":"HH IH R","high":"HH AY",
+  "holidays":"HH AA L AH D EY Z","home":"HH OW M","honesty":"AA N AH S T IY",
+  "hotel":"HH OW T EH L","how":"HH AW","humour":"HH Y UW M ER",
+  "i":"AY","idea":"AY D IY AH","impressed":"IH M P R EH S T","in":"IH N",
+  "interesting":"IH N T R AH S T IH NG","internet":"IH N T ER N EH T",
+  "invite":"IH N V AY T","is":"IH Z","it":"IH T","just":"JH AH S T",
+  "keep":"K IY P","kids":"K IH D Z","later":"L EY T ER","learn":"L ER N",
+  "leave":"L IY V","lend":"L EH N D","less":"L EH S","let":"L EH T",
+  "like":"L AY K","link":"L IH NG K","little":"L IH T AH L","long":"L AO NG",
+  "look":"L UH K","looking":"L UH K IH NG","lost":"L AO S T","lovely":"L AH V L IY",
+  "low":"L OW","luggage":"L AH G AH JH","make":"M EY K","manage":"M AE N AH JH",
+  "manager":"M AE N AH JH ER","married":"M EH R IY D","match":"M AE CH",
+  "me":"M IY","medicine":"M EH D AH S AH N","medication":"M EH D AH K EY SH AH N",
+  "meeting":"M IY T IH NG","menu":"M EH N Y UW","message":"M EH S AH JH",
+  "minutes":"M IH N AH T S","missing":"M IH S IH NG","mistake":"M IH S T EY K",
+  "moment":"M OW M AH N T","more":"M AO R","morning":"M AO R N IH NG",
+  "movies":"M UW V IY Z","much":"M AH CH","mute":"M Y UW T","my":"M AY",
+  "name":"N EY M","napkins":"N AE P K AH N Z","nearest":"N IH R AH S T",
+  "need":"N IY D","nervous":"N ER V AH S","next":"N EH K S T","night":"N AY T",
+  "no":"N OW","not":"N AA T","now":"N AW","nuts":"N AH T S","of":"AH V",
+  "offers":"AO F ER Z","on":"AA N","one":"W AH N","opinion":"AH P IH N Y AH N",
+  "order":"AO R D ER","out":"AW T","outside":"AW T S AY D",
+  "overwhelmed":"OW V ER W EH L M D","pain":"P EY N","passport":"P AE S P AO R T",
+  "passionate":"P AE SH AH N AH T","penicillin":"P EH N AH S IH L AH N",
+  "perspective":"P ER S P EH K T IH V","pharmacy":"F AA R M AH S IY",
+  "phone":"F OW N","photo":"F OW T OW","platform":"P L AE T F AO R M",
+  "player":"P L EY ER","please":"P L IY Z","plenty":"P L EH N T IY",
+  "point":"P OY N T","policy":"P AA L AH S IY",
+  "prescription":"P R IH S K R IH P SH AH N","price":"P R AY S",
+  "proud":"P R AW D","question":"K W EH S CH AH N","really":"R IY L IY",
+  "receipt":"R AH S IY T","received":"R AH S IY V D",
+  "recommend":"R EH K AH M EH N D","relieved":"R AH L IY V D",
+  "reminds":"R AH M AY N D Z","repeat":"R AH P IY T","report":"R AH P AO R T",
+  "reservation":"R EH Z ER V EY SH AH N","resend":"R IY S EH N D",
+  "rest":"R EH S T","return":"R AH T ER N","right":"R AY T","role":"R OW L",
+  "say":"S EY","schedule":"S K EH JH UW L","science":"S AY AH N S",
+  "screen":"S K R IY N","see":"S IY","send":"S EH N D","sense":"S EH N S",
+  "share":"SH EH R","sharing":"SH EH R IH NG","show":"SH OW","sit":"S IH T",
+  "size":"S AY Z","sleeping":"S L IY P IH NG","slow":"S L OW",
+  "slowly":"S L OW L IY","some":"S AH M","someone":"S AH M W AH N",
+  "soon":"S UW N","sorry":"S AA R IY","spare":"S P EH R","speak":"S P IY K",
+  "special":"S P EH SH AH L","specialize":"S P EH SH AH L AY Z",
+  "spicy":"S P AY S IY","split":"S P L IH T","station":"S T EY SH AH N",
+  "stock":"S T AA K","stuck":"S T AH K","sundays":"S AH N D EY Z",
+  "table":"T EY B AH L","take":"T EY K","takeaway":"T EY K AH W EY",
+  "thank":"TH AE NG K","that":"DH AE T","the":"DH AH","there":"DH EH R",
+  "this":"DH IH S","throat":"TH R OW T","time":"T AY M","to":"T UW",
+  "today":"T AH D EY","together":"T AH G EH DH ER","too":"T UW",
+  "train":"T R EY N","try":"T R AY","two":"T UW",
+  "under":"AH N D ER","understand":"AH N D ER S T AE N D",
+  "unmute":"AH N M Y UW T","updated":"AH P D EY T AH D",
+  "urgently":"ER JH AH N T L IY","vegetarian":"V EH JH AH T EH R IY AH N",
+  "video":"V IH D IY OW","volume":"V AA L Y AH M","watch":"W AA CH",
+  "water":"W AO T ER","weather":"W EH DH ER","week":"W IY K",
+  "weekend":"W IY K EH N D","welcome":"W EH L K AH M","well":"W EH L",
+  "what":"W AH T","when":"W EH N","where":"W EH R","will":"W IH L",
+  "window":"W IH N D OW","with":"W IH DH","wonderful":"W AH N D ER F AH L",
+  "word":"W ER D","work":"W ER K","working":"W ER K IH NG",
+  "worried":"W ER IY D","worse":"W ER S","year":"Y IH R","years":"Y IH R Z",
+  "you":"Y UW","your":"Y AO R",
+  // Common short words that get skipped in scoring
+  "i'm":"AY M","it's":"IH T S","i've":"AY V","i'll":"AY L",
+  "don't":"D OW N T","can't":"K AE N T","won't":"W OW N T",
+  "isn't":"IH Z AH N T","wasn't":"W AH Z AH N T",
+  "let's":"L EH T S","that's":"DH AE T S","there's":"DH EH R Z",
+  "what's":"W AH T S","how's":"HH AW Z","we'll":"W IY L",
+  "up":"AH P","us":"AH S","our":"AW R","out":"AW T",
+  "off":"AO F","by":"B AY","so":"S OW","go":"G OW",
+  "see":"S IY","got":"G AA T","get":"G EH T","put":"P UH T",
+  "had":"HH AE D","has":"HH AE Z","him":"HH IH M","his":"HH IH Z",
+  "its":"IH T S","may":"M EY","did":"D IH D","yes":"Y EH S",
+  "no":"N OW","oh":"OW","hi":"HH AY","hey":"HH EY",
+  "who":"HH UW","why":"W AY","few":"F Y UW","new":"N UW",
+  "old":"OW L D","own":"OW N","set":"S EH T","too":"T UW",
+  "use":"Y UW Z","way":"W EY","also":"AO L S OW","both":"B OW TH",
+  "but":"B AH T","come":"K AH M","into":"IH N T UW",
+  "like":"L AY K","most":"M OW S T","over":"OW V ER","same":"S EY M",
+  "such":"S AH CH","they":"DH EY","time":"T AY M","very":"V EH R IY",
+  "want":"W AA N T","with":"W IH DH","would":"W UH D",
+  "her":"HH ER","him":"HH IH M","his":"HH IH Z","she":"SH IY","he":"HH IY",
+  "them":"DH EH M","then":"DH EH N","these":"DH IY Z","those":"DH OW Z",
+  "through":"TH R UW","really":"R IY L IY","only":"OW N L IY",
+  "after":"AE F T ER","before":"B IH F AO R","between":"B IH T W IY N",
+  "during":"D UH R IH NG","since":"S IH N S","until":"AH N T IH L",
+  "while":"W AY L","within":"W IH DH IH N","without":"W IH DH AW T",
+  "against":"AH G EH N S T","along":"AH L AO NG","among":"AH M AH NG",
+  "around":"AH R AW N D","behind":"B IH H AY N D","below":"B IH L OW",
+  "beside":"B IH S AY D","between":"B IH T W IY N","beyond":"B IY AA N D",
+  "down":"D AW N","during":"D UH R IH NG","except":"IH K S EH P T",
+  "inside":"IH N S AY D","near":"N IH R","off":"AO F","onto":"AA N T UW",
+  "past":"P AE S T","since":"S IH N S","through":"TH R UW","toward":"T AO R D",
+  "under":"AH N D ER","until":"AH N T IH L","upon":"AH P AA N",
+};
+
+// Phoneme groups that are SIMILAR (partial credit) vs DIFFERENT (fail)
+// This catches common Indian English substitutions
+const PHONEME_SIMILAR = {
+  // 'th' sounds — most common Indian English error
+  "DH": ["D","Z"],      // "the" → "de" is close but wrong
+  "TH": ["T","S","F"],  // "three" → "tree" is wrong
+  // Vowel confusions
+  "AE": ["EH","AH"],
+  "EH": ["AE","IH"],
+  "IH": ["EH","IY"],
+  "AO": ["AA","AH"],
+  "ER": ["AH","R"],
+  "OW": ["AO","AH"],
+  "UW": ["UH","IY"],
+  // Consonant near-misses
+  "W":  ["V"],          // "very"→"wery" type swap
+  "V":  ["W","B"],
+  "Z":  ["S"],
+  "SH": ["S","CH"],
+  "JH": ["Z","Y"],
+};
+
+function phonemeSimilar(a,b){
+  if(a===b)return 1.0;
+  if(PHONEME_SIMILAR[a]&&PHONEME_SIMILAR[a].includes(b))return 0.4;
+  if(PHONEME_SIMILAR[b]&&PHONEME_SIMILAR[b].includes(a))return 0.4;
+  // Same consonant class (both stops, both fricatives etc)
+  const stops=new Set(["P","B","T","D","K","G"]);
+  const fric=new Set(["F","V","TH","DH","S","Z","SH","ZH"]);
+  const nasal=new Set(["M","N","NG"]);
+  if(stops.has(a)&&stops.has(b))return 0.25;
+  if(fric.has(a)&&fric.has(b))return 0.2;
+  if(nasal.has(a)&&nasal.has(b))return 0.3;
+  return 0.0;
+}
+
+// Convert word to phoneme array using dictionary, fall back to letter-based rules
+function wordToPhonemes(word){
+  word=word.toLowerCase().replace(/[^a-z']/g,'');
+  if(PHONEMES[word])return PHONEMES[word].split(' ');
+  // Handle common suffixes for words not in dict
+  if(word.endsWith("ing")&&PHONEMES[word.slice(0,-3)])return [...PHONEMES[word.slice(0,-3)].split(' '),"IH","NG"];
+  if(word.endsWith("ed")&&PHONEMES[word.slice(0,-2)])return [...PHONEMES[word.slice(0,-2)].split(' '),"D"];
+  if(word.endsWith("s")&&PHONEMES[word.slice(0,-1)])return [...PHONEMES[word.slice(0,-1)].split(' '),"Z"];
+  if(word.endsWith("ly")&&PHONEMES[word.slice(0,-2)])return [...PHONEMES[word.slice(0,-2)].split(' '),"L","IY"];
+  if(word.endsWith("er")&&PHONEMES[word.slice(0,-2)])return [...PHONEMES[word.slice(0,-2)].split(' '),"ER"];
+  // Fallback: use letters as rough phoneme stand-ins
+  return word.toUpperCase().split('');
+}
+
+// Compare two phoneme sequences — returns 0.0 to 1.0
+function phonemeSequenceSim(seqA, seqB){
+  if(!seqA.length||!seqB.length)return 0;
+  // Dynamic programming alignment (like sequence alignment in bioinformatics)
+  const m=seqA.length,n=seqB.length;
+  const dp=Array.from({length:m+1},()=>new Float32Array(n+1));
+  for(let i=0;i<=m;i++)dp[i][0]=0;
+  for(let j=0;j<=n;j++)dp[0][j]=0;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const sim=phonemeSimilar(seqA[i-1],seqB[j-1]);
+      dp[i][j]=Math.max(
+        dp[i-1][j-1]+sim,   // match/substitute
+        dp[i-1][j]-0.2,     // delete from A
+        dp[i][j-1]-0.2      // delete from B
+      );
+    }
+  }
+  const maxPossible=Math.min(m,n);
+  return Math.max(0,dp[m][n])/maxPossible;
+}
+
+// Score a spoken word against a target word using phonemes
+function phonemeWordScore(spokenWord, targetWord){
+  if(spokenWord===targetWord)return 1.0;
+  const spokenP=wordToPhonemes(spokenWord);
+  const targetP=wordToPhonemes(targetWord);
+  return phonemeSequenceSim(spokenP,targetP);
+}
+
+// CRITICAL WORDS — these must be pronounced correctly (can't be skipped)
+// Short function words (a, the, is, in, to) are skippable
+const SKIP_WORDS=new Set(["a","an","the","is","are","am","i","to","of","in","on","at","it","be","do","my","we","you","he","she","they","up","so","no","oh","hi","but","for","and","or","by","us","as","if","go","all","got","did","its","him","his","her","out","off","may","yes","hey","too","set","few","new","old","own","way","use","not","now","nor","yet","was","has","had","how","who","why","can","our","with","from","that","this","what","when","where","then","them","also","both","come","into","like","most","over","same","such","they","time","very","want","would","have","been","let","put","get","see","say","two","one","long","just"]);
+
+function isContentWord(w){return w.length>2&&!SKIP_WORDS.has(w.toLowerCase());}
+
+// MAIN SCORING — phoneme-based, strict on content words
+function scoreUtterance(spokenRaw, targetRaw){
+  const spoken=spokenRaw.toLowerCase().replace(/[^a-z\s']/g,'').trim().split(/\s+/);
+  const target=targetRaw.toLowerCase().replace(/[^a-z\s']/g,'').trim().split(/\s+/);
+
+  const results=[]; // per-word results
+  let totalScore=0, totalWeight=0;
+
+  for(const tw of target){
+    const clean=tw.replace(/[^a-z']/g,'');
+    if(!clean)continue;
+    const isContent=isContentWord(clean);
+    const weight=isContent?3:1; // content words weighted 3x
+
+    // Find best spoken word match
+    let bestScore=0;
+    let bestSpoken='';
+    for(const sw of spoken){
+      const sc=phonemeWordScore(sw.replace(/[^a-z']/g,''),clean);
+      if(sc>bestScore){bestScore=sc;bestSpoken=sw;}
+    }
+
+    // Strict threshold for content words: must score >0.72
+    const passed=isContent?(bestScore>=0.72):(bestScore>=0.45);
+    results.push({word:clean,score:bestScore,passed,isContent,bestSpoken,weight});
+    totalScore+=bestScore*weight;
+    totalWeight+=weight;
+  }
+
+  const overall=totalWeight>0?totalScore/totalWeight:0;
+  const failedContentWords=results.filter(r=>r.isContent&&!r.passed);
+  return {overall,results,failedContentWords};
+}
+
 function normalize(s){return s.toLowerCase().replace(/[^a-z\s']/g,'').replace(/\s+/g,' ').trim();}
-function soundex(w){
-  const m={b:1,f:1,p:1,v:1,c:2,g:2,j:2,k:2,q:2,s:2,x:2,z:2,d:3,t:3,l:4,m:5,n:5,r:6};
-  w=w.toLowerCase().replace(/[^a-z]/g,'');if(!w)return'';
-  let c=w[0].toUpperCase(),p=m[w[0]]||0;
-  for(let i=1;i<w.length&&c.length<4;i++){const cur=m[w[i]]||0;if(cur&&cur!==p)c+=cur;p=cur;}
-  return c.padEnd(4,'0');
-}
-function lev(a,b){
-  const m=a.length,n=b.length,dp=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);
-  for(let j=0;j<=n;j++)dp[0][j]=j;
-  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-  return dp[m][n];
-}
-function wordSim(sw,tw){
-  if(sw===tw)return 1;
-  const mx=Math.max(sw.length,tw.length);if(!mx)return 1;
-  const levScore=1-lev(sw,tw)/mx;
-  const sdx=soundex(sw)===soundex(tw)?1:0;
-  const pre=sw.slice(0,3)===tw.slice(0,3)?1:0;
-  return levScore*0.5+(sdx+pre)/2*0.5;
-}
-function scoreTranscript(spoken,target){
-  const sw=spoken.split(' '),tw=target.split(' ');
-  return tw.reduce((sum,t)=>sum+Math.max(...sw.map(s=>wordSim(s,t))),0)/tw.length;
-}
+
 function evaluateAnswer(transcripts,targetText,waveId,fbId,onPass){
-  const target=normalize(targetText||activeSentences[currentIdx].en);
-  let best=0,bestT=transcripts[0];
-  transcripts.forEach(t=>{const sc=scoreTranscript(normalize(t),target);if(sc>best){best=sc;bestT=t;}});
+  const target=targetText||(activeSentences[currentIdx]&&activeSentences[currentIdx].en)||'';
+  let bestResult=null;
+  let bestScore=0;
+  let bestT=transcripts[0]||'';
+
+  transcripts.forEach(t=>{
+    const r=scoreUtterance(t,target);
+    if(r.overall>bestScore){bestScore=r.overall;bestT=t;bestResult=r;}
+  });
+
   const wave=document.getElementById(waveId||'waveContainer');
   const fb=document.getElementById(fbId||'feedbackBox');
-  if(best>=0.82){
+
+  if(bestScore>=0.78&&(!bestResult||bestResult.failedContentWords.length===0)){
+    // PASS — all content words pronounced correctly
     wave.className='wave-container success';
-    fb.textContent='✅ Excellent! Well said! 🎉';fb.className='feedback-box success';
+    fb.textContent='✅ Excellent pronunciation! Well said! 🎉';
+    fb.className='feedback-box success';
     if(onPass)onPass();
-  } else if(best>=0.60){
+  } else if(bestResult&&bestResult.failedContentWords.length>0){
+    // Specific words failed — tell them exactly which ones
     wave.className='wave-container error';
-    fb.textContent='🟡 Close! I heard: "'+bestT+'". Check pronunciation and try again!';fb.className='feedback-box error';
-    setTimeout(()=>wave.className='wave-container',2000);
+    const badWords=bestResult.failedContentWords.slice(0,2).map(r=>{
+      const sc=Math.round(r.score*100);
+      // Detect 'th' specifically — most common Indian English error
+      const targetP=wordToPhonemes(r.word);
+      const spokenP=r.bestSpoken?wordToPhonemes(r.bestSpoken):[];
+      const hasTH=targetP.includes('TH')||targetP.includes('DH');
+      const hint=hasTH?' (focus on the "th" sound — put your tongue between your teeth!)':'';
+      return '"'+r.word+'" ('+sc+'%)'+hint;
+    });
+    fb.textContent='❌ Focus on: '+badWords.join(' and ')+'. Tap 🔊 Listen and try again!';
+    fb.className='feedback-box error';
+    setTimeout(()=>wave.className='wave-container',3500);
+  } else if(bestScore>=0.55){
+    wave.className='wave-container error';
+    fb.textContent='🟡 Almost there! I heard: "'+bestT+'". Say each word more clearly!';
+    fb.className='feedback-box error';
+    setTimeout(()=>wave.className='wave-container',2500);
   } else {
     wave.className='wave-container error';
-    fb.textContent='❌ I heard: "'+(bestT||'nothing clear')+'". Tap 🔊 Listen first, then try!';fb.className='feedback-box error';
-    setTimeout(()=>wave.className='wave-container',2000);
+    fb.textContent='❌ I heard: "'+(bestT||'nothing clear')+'". Tap 🔊 Listen first, then repeat slowly!';
+    fb.className='feedback-box error';
+    setTimeout(()=>wave.className='wave-container',2500);
   }
 }
 
