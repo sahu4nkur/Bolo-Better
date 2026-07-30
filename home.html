@@ -189,71 +189,93 @@ button{user-select:none;-webkit-tap-highlight-color:transparent}
 
 /* Scrollable legacy */
 .scrollable{overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column}
+  .story-card{background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:9px 12px;margin-top:7px;flex-shrink:0;display:none}
+  .story-card.visible{display:block}
+  .story-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#A5B4FC;margin-bottom:4px}
+  .story-text{font-size:12px;color:#C7D2FE;line-height:1.6}
 </style>
 </head>
 <body>
 
 <!-- ── WELCOME ── -->
 <div id="welcome" class="screen active">
-  <div class="app-badge">🇮🇳 Hindi → English</div>
-  <div class="app-title">Bolo<span>Better</span></div>
-  <div class="app-hindi">अंग्रेज़ी बोलना सीखें — बोलकर!</div>
 
-  <!-- Returning user panel -->
-  <div id="returningPanel" style="display:none;width:100%">
-    <div class="returning-card">
-      <div class="returning-hi" id="returningName"></div>
-      <div class="returning-prog" id="returningProgress"></div>
-      <button class="btn-resume" id="btnResume" onclick="resumeSession()">▶ Resume Where I Left Off</button>
-      <button class="btn-switch" onclick="switchUser()">Switch User →</button>
-    </div>
-    <div class="home-actions">
-      <!-- PRIMARY: My Introduction -->
-      <button class="home-card home-card-intro" onclick="goIntroBuilder()">
-        <div class="home-card-icon">🙋</div>
-        <div>
-          <div class="home-card-title">My Personal Introduction</div>
-          <div class="home-card-sub">Enter your name, job & company — practise introducing yourself in English</div>
-        </div>
-      </button>
-      <button class="home-card home-card-practice" onclick="goCategories()">
-        <div class="home-card-icon">📚</div>
-        <div>
-          <div class="home-card-title">Practise 220 Sentences</div>
-          <div class="home-card-sub">Greetings, work, shopping, travel & more</div>
-        </div>
-      </button>
+  <!-- Why this exists — universal, not personal -->
+  <div style="width:100%;background:rgba(245,158,11,0.08);border-bottom:1px solid rgba(245,158,11,0.2);padding:18px 20px 16px;flex-shrink:0">
+    <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--saffron);margin-bottom:10px">यह app किसके लिए है?</div>
+    <div style="font-size:14px;line-height:1.7;color:#E0DEFF;font-weight:400">
+      बहुत से लोग English <strong style="color:white">समझते</strong> हैं — पर बोलते वक़्त रुक जाते हैं।<br><br>
+      Not because they don't know English. But because nobody ever gave them a <strong style="color:white">safe place to practise</strong> — without the fear of being judged, laughed at, or getting it wrong in front of someone.<br><br>
+      <strong style="color:white">BoloBetter is that place.</strong> No classroom. No grammar lessons. No embarrassment. Just the sentences you actually need — at work, with colleagues, with customers — said by you, out loud, until they feel completely natural.
     </div>
   </div>
 
-  <!-- New user panel -->
-  <div id="newUserPanel" style="width:100%">
-    <div class="user-input-wrap">
-      <span class="user-input-label">Who is using this app?</span>
-      <div class="user-input-row">
-        <input id="userNameInput" type="text" placeholder="Enter your name..." maxlength="30" onkeydown="if(event.key==='Enter')continueAsNewUser()">
-        <button class="btn-go" onclick="continueAsNewUser()">Let's Go →</button>
-      </div>
-    </div>
-    <div id="savedUsersList"></div>
+  <!-- Scrollable content below story -->
+  <div style="flex:1;overflow-y:auto;padding:16px 20px 24px;width:100%">
 
-    <!-- Show action cards even before login so people know what's inside -->
-    <div class="home-actions" style="margin-top:8px;opacity:0.5;pointer-events:none">
-      <div class="home-card home-card-intro" style="cursor:default">
-        <div class="home-card-icon">🙋</div>
-        <div>
-          <div class="home-card-title">My Personal Introduction</div>
-          <div class="home-card-sub">Build & practise your own English introduction</div>
-        </div>
+    <div class="app-title" style="margin-bottom:4px">Bolo<span>Better</span></div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:18px;font-weight:500">Sirf itna chahiye — बस इतना काफ़ी है। No Shakespeare. No exams. Just confidence.</div>
+
+    <!-- Returning user panel -->
+    <div id="returningPanel" style="display:none;width:100%">
+      <div class="returning-card">
+        <div class="returning-hi" id="returningName"></div>
+        <div class="returning-prog" id="returningProgress"></div>
+        <button class="btn-resume" id="btnResume" onclick="resumeSession()">▶ Resume Where I Left Off</button>
+        <button class="btn-switch" onclick="switchUser()">Switch User →</button>
       </div>
-      <div class="home-card home-card-practice" style="cursor:default">
-        <div class="home-card-icon">📚</div>
-        <div>
-          <div class="home-card-title">220 Everyday Sentences</div>
-          <div class="home-card-sub">Greetings, work, travel, health & more</div>
+      <div class="home-actions">
+        <button class="home-card" onclick="goSurvival()" style="background:rgba(239,68,68,0.15);border:1.5px solid rgba(239,68,68,0.4);color:white">
+          <div class="home-card-icon">🆘</div>
+          <div>
+            <div class="home-card-title">Don't Get Caught Off Guard</div>
+            <div class="home-card-sub">The sentences I wish I knew on Day One at work — restroom, commute, meetings</div>
+          </div>
+        </button>
+        <button class="home-card home-card-intro" onclick="goIntroBuilder()">
+          <div class="home-card-icon">🙋</div>
+          <div>
+            <div class="home-card-title">My Personal Introduction</div>
+            <div class="home-card-sub">Build sentences about YOU — your name, role, company — and practise saying them</div>
+          </div>
+        </button>
+        <button class="home-card home-card-practice" onclick="goCategories()">
+          <div class="home-card-icon">📚</div>
+          <div>
+            <div class="home-card-title">Practise 220+ Sentences</div>
+            <div class="home-card-sub">Greetings, workplace, shopping, travel, small talk & more</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- New user panel -->
+    <div id="newUserPanel" style="width:100%">
+      <div class="user-input-wrap">
+        <span class="user-input-label">अपना नाम बताइए — Who are you?</span>
+        <div class="user-input-row">
+          <input id="userNameInput" type="text" placeholder="Enter your name..." maxlength="30" onkeydown="if(event.key==='Enter')continueAsNewUser()">
+          <button class="btn-go" onclick="continueAsNewUser()">शुरू करें →</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Your progress will be saved on this device.</div>
+      </div>
+      <div id="savedUsersList"></div>
+      <div class="home-actions" style="margin-top:4px;opacity:0.45;pointer-events:none">
+        <div class="home-card" style="background:rgba(239,68,68,0.12);border:1.5px solid rgba(239,68,68,0.3);color:white;cursor:default">
+          <div class="home-card-icon">🆘</div>
+          <div><div class="home-card-title">Don't Get Caught Off Guard</div><div class="home-card-sub">Survival sentences for Day One at work</div></div>
+        </div>
+        <div class="home-card home-card-intro" style="cursor:default">
+          <div class="home-card-icon">🙋</div>
+          <div><div class="home-card-title">My Personal Introduction</div><div class="home-card-sub">Build & practise sentences about yourself</div></div>
+        </div>
+        <div class="home-card home-card-practice" style="cursor:default">
+          <div class="home-card-icon">📚</div>
+          <div><div class="home-card-title">220+ Everyday Sentences</div><div class="home-card-sub">Greetings, work, travel, health & more</div></div>
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -348,6 +370,10 @@ button{user-select:none;-webkit-tap-highlight-color:transparent}
       <div class="meaning-card">
         <div class="meaning-title">📖 When to use this</div>
         <div class="meaning-text" id="sentMeaning"></div>
+      </div>
+      <div class="story-card" id="storyCard">
+        <div class="story-label">💬 Why this sentence matters</div>
+        <div class="story-text" id="sentStory"></div>
       </div>
     </div>
   </div>
@@ -457,6 +483,23 @@ button{user-select:none;-webkit-tap-highlight-color:transparent}
 // SENTENCES (220)
 // ══════════════════════════════════════
 const sentences = [
+  // ══════════════════════════════════════
+  // 🆘 DON'T GET CAUGHT OFF GUARD
+  // The sentences I wish I knew on Day One
+  // ══════════════════════════════════════
+  {cat:"🆘 Don't Get Caught",en:"Where is the restroom, please?",pron:"/wer ɪz ðə ˈrest.ruːm pliːz/",hi:"बाथरूम कहाँ है?",meaning:"'Restroom' is the polite word for toilet/bathroom in a professional setting. Always use this word at work or in a hotel — never say 'toilet room' or 'bathroom room'.",story:"Many people don't know what 'restroom' means the first time they hear it. It sounds like a room to rest in when you are tired — it is not. Knowing this word means you never stand there confused when someone asks you where it is or points you to it."},
+  {cat:"🆘 Don't Get Caught",en:"How do you commute to work?",pron:"/haʊ duː juː kəˈmjuːt tə wɜːk/",hi:"आप काम पर कैसे आते हैं?",meaning:"'Commute' means your daily travel to and from work. People ask this as small talk. Answer with: 'I take the metro' or 'I come by bus' or 'I drive.'",story:"'How do you commute?' sounds like a complicated question if you've never heard it before. It simply means: aap office kaise aate ho? Once you know this, it becomes the easiest conversation starter."},
+  {cat:"🆘 Don't Get Caught",en:"I will be right back.",pron:"/aɪ wɪl biː raɪt bæk/",hi:"मैं अभी वापस आता हूँ।",meaning:"Say this when you need to step away briefly — to take a call, use the restroom, or get something. It tells people not to worry, you are coming back soon.",story:"Without this sentence, people leave a meeting or conversation without saying anything, which can seem rude. This four-word sentence handles it perfectly."},
+  {cat:"🆘 Don't Get Caught",en:"Could you please repeat that?",pron:"/kʊd juː pliːz rɪˈpiːt ðæt/",hi:"क्या आप यह दोबारा कह सकते हैं?",meaning:"When you don't hear or understand something, say this immediately. It is never embarrassing to ask. What IS embarrassing is nodding yes when you didn't understand and then doing the wrong thing.",story:"Most people nod and smile when they don't understand, hoping it will make sense later. It never does. This sentence saves you every single time — use it without any hesitation."},
+  {cat:"🆘 Don't Get Caught",en:"I am sorry, I did not quite catch that.",pron:"/aɪ æm ˈsɒr.i aɪ dɪd nɒt kwaɪt kætʃ ðæt/",hi:"माफ़ कीजिए, मुझे ठीक से सुनाई नहीं दिया।",meaning:"'I didn't catch that' is a natural, soft way to say 'I didn't hear/understand you.' More polished than 'what?' or 'huh?' — use this in meetings and with seniors.",story:"'What?' alone sounds abrupt and rude. 'Pardon?' is too formal. 'I didn't quite catch that' is the sweet spot — polite, natural, and used by confident English speakers every day."},
+  {cat:"🆘 Don't Get Caught",en:"Let me check and get back to you.",pron:"/let miː tʃek ænd ɡet bæk tə juː/",hi:"मैं जाँच करके आपको बताता हूँ।",meaning:"When you don't know the answer, NEVER guess or make something up. Say this instead. It shows responsibility and intelligence — not weakness.",story:"Many people say 'yes' to things they are not sure about because they are afraid to admit they don't know. This leads to mistakes, missed deadlines, and a loss of trust. This one sentence protects you from all of that. It gives you time and earns respect at the same time."},
+  {cat:"🆘 Don't Get Caught",en:"Could you send that to me in an email?",pron:"/kʊd juː send ðæt tə miː ɪn ən ˈiː.meɪl/",hi:"क्या आप यह मुझे ईमेल में भेज सकते हैं?",meaning:"When someone gives you complex information verbally and you are worried you will forget or misunderstand, ask for it in writing. This is professional, not a sign of weakness.",story:"How many times have you walked away from a conversation and forgotten half of what was said? This sentence protects you. It also protects you if someone later says 'you were told this' — you have it in writing."},
+  {cat:"🆘 Don't Get Caught",en:"I am still learning but I am getting there.",pron:"/aɪ æm stɪl ˈlɜːn.ɪŋ bʌt aɪ æm ˈɡet.ɪŋ ðer/",hi:"मैं अभी सीख रहा हूँ लेकिन आगे बढ़ रहा हूँ।",meaning:"When someone asks about something you are not yet confident about, this is the most honest and impressive answer you can give. It shows self-awareness and a positive attitude.",story:"Saying 'I don't know' alone sounds defeated. This sentence says the same thing but with confidence and forward momentum. Every good manager respects this answer far more than a wrong guess."},
+  {cat:"🆘 Don't Get Caught",en:"Excuse me, am I in the right meeting room?",pron:"/ɪkˈskjuːz miː æm aɪ ɪn ðə raɪt ˈmiː.tɪŋ ruːm/",hi:"माफ़ कीजिए, क्या मैं सही मीटिंग रूम में हूँ?",meaning:"Ask this confidently when you are unsure. It is far better than sitting in the wrong room for ten minutes and then realising it. Everyone has done this — no one will judge you for asking.",story:"It is very common to walk into the wrong meeting room, especially in a new office. Sitting there silently hoping you are in the right place is far more embarrassing than simply asking. One sentence, asked confidently, solves it immediately."},
+  {cat:"🆘 Don't Get Caught",en:"I have a question — is now a good time?",pron:"/aɪ hæv ə ˈkwes.tʃən ɪz naʊ ə ɡʊd taɪm/",hi:"मेरा एक सवाल है — क्या अभी सही समय है?",meaning:"Before asking your manager or a senior colleague something, always ask if this is a good time. It shows respect for their time and makes them far more receptive to helping you.",story:"Walking up to someone and asking a question without checking if they are free is one of the most common mistakes junior colleagues make. This sentence takes three seconds and changes the entire dynamic."},
+  {cat:"🆘 Don't Get Caught",en:"Nice to meet you. I just joined the team.",pron:"/naɪs tə miːt juː aɪ dʒʌst dʒɔɪnd ðə tiːm/",hi:"आपसे मिलकर अच्छा लगा। मैं अभी टीम में शामिल हुआ हूँ।",meaning:"When you meet someone new at work for the first time, this is the perfect two-sentence combination. Simple, professional, and it gives them context about who you are.",story:"On Day One at a new job, everyone will ask who you are. Having this sentence ready means you never stand there awkwardly not knowing what to say. It makes you look prepared and confident."},
+  {cat:"🆘 Don't Get Caught",en:"I will make a note of that.",pron:"/aɪ wɪl meɪk ə nəʊt əv ðæt/",hi:"मैं इसे नोट कर लेता हूँ।",meaning:"Say this when someone gives you important information or instructions. It signals that you take your work seriously and that the information will not be forgotten.",story:"This sentence does two things: it reassures the person speaking that you are listening, and it quietly commits you to actually writing it down. Both outcomes are good for your career."},
+  {cat:"🆘 Don't Get Caught",en:"I am available. How can I help?",pron:"/aɪ æm əˈveɪ.lə.bl̩ haʊ kæn aɪ help/",hi:"मैं उपलब्ध हूँ। मैं कैसे मदद कर सकता हूँ?",meaning:"When a senior or colleague looks around for help, this is the sentence that makes you stand out. Proactive, confident, and short.",story:"The people who grow fastest in their careers are not always the most skilled — they are often the most willing. Two sentences. One habit. Big difference in how people see you."},
   {cat:"👋 Greetings",en:"Good morning!",pron:"/gʊd ˈmɔːr.nɪŋ/",hi:"सुप्रभात!",meaning:"Say this when you see someone in the morning. A warm, friendly greeting used everywhere."},
   {cat:"👋 Greetings",en:"Good afternoon!",pron:"/gʊd ˌæf.tərˈnuːn/",hi:"नमस्ते (दोपहर में)!",meaning:"Used from about 12 noon to 5 PM when you meet someone or enter a room."},
   {cat:"👋 Greetings",en:"Good evening!",pron:"/gʊd ˈiːv.nɪŋ/",hi:"शुभ संध्या!",meaning:"Use this after 5 PM as a polite greeting when you see someone."},
@@ -1224,6 +1267,12 @@ function startWithCategories(){
   }
   switchScreen('practice');initSpeech();loadSentence(currentIdx);
 }
+function goSurvival(){
+  // Select only the survival category and start immediately
+  selectedCats=new Set(["🆘 Don't Get Caught"]);
+  startWithCategories();
+}
+
 function loadSentence(idx){
   const s=activeSentences[idx];
   document.getElementById('sentEng').textContent=s.en;
@@ -1233,6 +1282,11 @@ function loadSentence(idx){
   document.getElementById('catBadge').textContent=s.cat;
   document.getElementById('progText').textContent=(idx+1)+' / '+activeSentences.length;
   document.getElementById('progBar').style.width=((idx+1)/activeSentences.length*100)+'%';
+  // Show story card only if this sentence has a story
+  const storyCard=document.getElementById('storyCard');
+  const storyEl=document.getElementById('sentStory');
+  if(s.story){storyCard.className='story-card visible';storyEl.textContent=s.story;}
+  else{storyCard.className='story-card';storyEl.textContent='';}
   setFeedback('Tap 🎙️ Speak and say the sentence out loud!','idle');
   document.getElementById('waveContainer').className='wave-container';
   lockNext();
